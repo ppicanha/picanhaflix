@@ -80,9 +80,13 @@ function updateNotificationIcon() {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
-    .catch(err => console.error('Erro ao registrar Service Worker:', err));
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+    .then(registration => {
+      // Força a verificação imediata de atualizações
+      registration.update();
+      console.log('Service Worker registrado e atualizado.');
+    })
+    .catch(err => console.error('Erro no SW:', err));
 }
 
 window.sendSystemNotification = function(title, body, icon = "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png") {

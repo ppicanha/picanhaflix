@@ -31,7 +31,7 @@ const db = admin.firestore();
 
 async function enviarNotificacoes() {
   try {
-    const snapshot = await db.collection('inscritos').get();
+    const snapshot = await db.collection('push_subscriptions').get();
     if (snapshot.empty) {
       console.log('Nenhum inscrito encontrado no banco.');
       return;

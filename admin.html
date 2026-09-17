@@ -15,14 +15,14 @@
   <div class="card">
     <h2>Painel de Push - PicanhaFlix</h2>
     
-    <label>Digite a Senha do Painel:</label>
-    <input type="password" id="senhaAdmin" placeholder="Digite sua senha">
+    <label>Seu Personal Access Token do GitHub:</label>
+    <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
 
     <label>Título da Notificação:</label>
-    <input type="text" id="titulo" value="O PicanhaFlix Atualizou!">
+    <input type="text" id="titulo" value="PicanhaFlix Novo Filme!">
 
     <label>Mensagem:</label>
-    <textarea id="mensagem" rows="3">Resolvemos alguns bugs. Olhe o Log para saber mais.</textarea>
+    <textarea id="mensagem" rows="3">Confira o novo lançamento adicionado ao catálogo!</textarea>
 
     <button onclick="dispararPush()">Disparar Notificação Agora</button>
     
@@ -30,17 +30,14 @@
   </div>
 
   <script>
-    const GITHUB_TOKEN = "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"; 
-    const SENHA_CORRETA = "Pedro12309!!";
-
     async function dispararPush() {
-      const senhaDigitada = document.getElementById('senhaAdmin').value;
+      const token = document.getElementById('githubToken').value;
       const titulo = document.getElementById('titulo').value;
       const mensagem = document.getElementById('mensagem').value;
       const status = document.getElementById('status');
 
-      if (senhaDigitada !== SENHA_CORRETA) {
-        alert('Senha incorreta!');
+      if (!token) {
+        alert('Insira o Token do GitHub!');
         return;
       }
 
@@ -50,7 +47,7 @@
         const response = await fetch('https://api.github.com/repos/ppicanha/picanhaflix/dispatches', {
           method: 'POST',
           headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Authorization': `token ${token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },
@@ -64,7 +61,7 @@
         });
 
         if (response.ok || response.status === 204) {
-          status.innerText = '🚀 Comando enviado com sucesso!';
+          status.innerText = '🚀 Comando enviado com sucesso! O GitHub enviará a notificação em instantes.';
         } else {
           status.innerText = '❌ Erro ao enviar: ' + response.statusText;
         }

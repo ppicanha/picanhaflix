@@ -80,13 +80,13 @@ function updateNotificationIcon() {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('/picanhaflix/sw.js', { scope: '/picanhaflix/' })
     .then(registration => {
-      // Força a verificação imediata de atualizações
+      // Força a busca por atualizações no servidor sem usar o cache local
       registration.update();
-      console.log('Service Worker registrado e atualizado.');
+      console.log('Service Worker registrado com sucesso no escopo /picanhaflix/');
     })
-    .catch(err => console.error('Erro no SW:', err));
+    .catch(err => console.error('Erro ao registrar o Service Worker:', err));
 }
 
 window.sendSystemNotification = function(title, body, icon = "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png") {

@@ -80,7 +80,9 @@ function updateNotificationIcon() {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/picanhaflix/sw.js');
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+    .catch(err => console.error('Erro ao registrar Service Worker:', err));
 }
 
 window.sendSystemNotification = function(title, body, icon = "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png") {

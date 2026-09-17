@@ -1,28 +1,22 @@
-name: Disparar Notificação ao Enviar Código
+name: Disparar Notificação
 
 on:
   push:
-    branches:
-      - main # Dispara sempre que você mandar alterações para a branch 'main'
+    branches: [ main ]
+  repository_dispatch:
+    types: [ manual-push-trigger ]
 
 jobs:
   enviar-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Baixar o código do repositório
-        uses: actions/checkout@v3
-
-      - name: Instalar o Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
-
-      - name: Instalar ferramentas necessárias
-        run: npm install web-push firebase-admin
-
-      - name: Executar o script de notificação
+      - run: npm install web-push firebase-admin
+      - run: node send-push.js
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-        run: node send-push.js

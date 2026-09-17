@@ -21,7 +21,7 @@ async function enviarNotificacoes() {
   const snapshot = await db.collection('push_subscriptions').get();
   
   const mensagem = JSON.stringify({
-    title: 'PicanhaFlix Atualizado!🍿',
+    title: 'PicanhaFlix Atualizado! v1.2.1 saiu!!🍿',
     body: 'Tem novidade no site! Confira as o Log de atualizações para conferir o que mudou.',
     icon: 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png'
   });

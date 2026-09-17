@@ -79,6 +79,10 @@ function updateNotificationIcon() {
   }
 }
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/picanhaflix/sw.js');
+}
+
 window.sendSystemNotification = function(title, body, icon = "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png") {
   if (localStorage.getItem("notificationsEnabled") === "true" && Notification.permission === "granted") {
     new Notification(title, { body, icon });

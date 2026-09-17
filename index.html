@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicanhaFlix</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Tela de Intro / Splash -->
+  <div id="intro-screen">
+    <div class="intro-content">
+      <h1 id="introLogo">PICANHAFLIX</h1>
+    </div>
+  </div>
+
+  <!-- Tela de Loading -->
+  <div id="loading-screen" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Tela de Login -->
+  <div id="auth-screen" style="display: none;">
+    <div class="auth-card">
+      <h2>Entrar no PicanhaFlix</h2>
+      <p>Acesse sua conta para ver seus filmes favoritos.</p>
+      <button class="btn-google" onclick="loginGoogle()">Entrar com o Google</button>
+    </div>
+  </div>
+
+  <!-- Seletor de Perfis -->
+  <div id="profile-selector" style="display: none;">
+    <div class="profile-header">
+      <h2>Quem está assistindo?</h2>
+    </div>
+    <div class="profiles-grid" id="profilesGrid"></div>
+  </div>
+
+  <!-- Modal Criar Perfil -->
+  <div id="profileModal" class="modal" style="display: none;">
+    <div class="modal-content profile-modal-content">
+      <span class="close-btn" onclick="closeCreateProfileModal()">&times;</span>
+      <h3>Criar Perfil</h3>
+      <input type="text" id="newProfileName" placeholder="Nome do perfil" maxlength="15">
+      <label for="newProfileImage" class="file-label">Foto de Perfil (Opcional)</label>
+      <input type="file" id="newProfileImage" accept="image/*">
+      <button class="btn-red" onclick="saveNewProfile()">Salvar</button>
+    </div>
+  </div>
+
+  <!-- Aplicação Principal -->
+  <div id="main-app" style="display: none;">
+    <header class="navbar">
+      <div class="nav-left">
+        <h1 class="logo" onclick="showCatalogSection('home')">PICANHAFLIX</h1>
+        <nav class="nav-links">
+          <a id="tabHome" class="active" onclick="showCatalogSection('home')">Início</a>
+          <a id="tabMyList" onclick="showCatalogSection('myList')">Minha Lista</a>
+          <a id="tabComingSoon" onclick="showCatalogSection('comingSoon')">Em Breve</a>
+        </nav>
+      </div>
+      <div class="nav-right">
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Buscar filmes..." onkeyup="searchMovies()">
+          <div id="searchResultsDropdown" class="search-dropdown" style="display: none;"></div>
+        </div>
+
+        <!-- Ícone de Notificação (Sininho fixado) -->
+        <button id="btnNotificationToggle" class="icon-button" onclick="toggleNotificationSetting()" title="Notificações">
+          🔔
+        </button>
+
+        <!-- Botão de Changelog / Novidades -->
+        <button class="btn-changelog icon-button" onclick="openChangelogModal()" title="Notas de Atualização">
+          <span class="changelog-icon">📋</span>
+          <span id="changelogBadge" class="badge-dot" style="display: none;"></span>
+        </button>
+
+        <div class="user-profile-menu">
+          <img id="headerAvatar" src="" class="header-avatar" onclick="switchProfile()">
+          <span id="headerName" class="header-name"></span>
+          <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-container">
+      <!-- Seção Início -->
+      <section id="homeSection">
+        <div id="continueSection" style="display: none;">
+          <h2 class="section-title">Continuar Assistindo</h2>
+          <div id="continueCatalog" class="movies-grid"></div>
+        </div>
+
+        <h2 class="section-title">Catálogo Principal</h2>
+        <div id="mainCatalog" class="movies-grid"></div>
+      </section>
+
+      <!-- Seção Minha Lista -->
+      <section id="myListSection" style="display: none;">
+        <h2 class="section-title">Minha Lista</h2>
+        <div id="myListCatalog" class="movies-grid"></div>
+      </section>
+
+      <!-- Seção Em Breve -->
+      <section id="comingSoonSection" style="display: none;">
+        <h2 class="section-title">Em Breve</h2>
+        <div id="comingSoonCatalog" class="movies-grid"></div>
+      </section>
+    </main>
+
+    <!-- Modal Detalhes do Filme -->
+    <div id="movieModal" class="modal" style="display: none;">
+      <div class="modal-content movie-modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div id="modalBanner" class="modal-banner">
+          <div class="banner-overlay">
+            <h2 id="modalTitle"></h2>
+            <div id="modalMeta" class="modal-meta"></div>
+            <div class="modal-actions">
+              <button class="btn-play" onclick="handleWatchClick()"><span id="btnWatchText">&#9654; Assistir</span></button>
+              <button id="btnRestart" class="btn-secondary" style="display: none;" onclick="restartMovie()">&#8634; Do Início</button>
+              <button class="btn-secondary" onclick="toggleMyList()"><span id="btnMyListText">+ Minha Lista</span></button>
+              <div id="btnDownload" class="download-container">
+                <button class="btn-secondary" onclick="toggleDownloadMenu()">&#129093; Baixar</button>
+                <div id="downloadMenu" class="download-menu" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p id="modalSynopsis" class="modal-synopsis"></p>
+      </div>
+    </div>
+
+    <!-- Pop-up de Permissão de Notificações -->
+    <div id="notificationBanner" class="notification-banner" style="display: none;">
+      <div class="notification-banner-content">
+        <p>Deseja ativar as notificações para receber avisos sobre novos filmes e atualizações do PicanhaFlix?</p>
+        <div class="notification-banner-buttons">
+          <button onclick="enableNotifications()">Ativar Notificações</button>
+          <button class="btn-dismiss" onclick="closeNotificationBanner()">Agora não</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Changelog / Notas de Atualização -->
+    <div id="changelogModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeChangelogModal()">&times;</span>
+        <h3>Notas de Atualização</h3>
+        <div id="changelogList"></div>
+      </div>
+    </div>
+
+    <!-- Player de Vídeo Customizado -->
+    <div id="playerView" class="player-container" style="display: none;">
+      <video id="videoPlayer" class="video-element">
+        <source id="videoSource" src="" type="video/mp4">
+      </video>
+
+      <div id="tapOverlayLeft" class="tap-overlay left"><span>-10s</span></div>
+      <div id="tapOverlayRight" class="tap-overlay right"><span>+10s</span></div>
+
+      <div id="playerControls" class="player-controls">
+        <div class="controls-top">
+          <button onclick="closePlayer()" class="btn-icon">&#10005; Sair</button>
+          <span id="playerMovieTitle" class="player-title"></span>
+          <select id="qualitySelect" class="quality-select" onchange="changeQuality()"></select>
+        </div>
+
+        <button id="btnCenterPlayPause" class="btn-center-play" onclick="togglePlayPause()">&#9654;</button>
+
+        <div class="controls-bottom">
+          <div class="progress-container">
+            <input type="range" id="playerSeek" value="0" min="0" max="100" oninput="seekVideo(this.value)">
+          </div>
+          <div class="controls-row">
+            <div class="left-controls">
+              <button id="btnPlayPause" class="btn-icon" onclick="togglePlayPause()">&#9654;</button>
+              <button id="btnMute" class="btn-icon" onclick="toggleMute()"></button>
+              <input type="range" id="volumeBar" min="0" max="1" step="0.1" value="1" oninput="changeVolume(this.value)">
+              <span id="timeDisplay" class="time-display">00:00 / 00:00</span>
+            </div>
+            <button class="btn-icon" onclick="toggleFullscreen()">&#9974;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

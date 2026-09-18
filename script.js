@@ -36,6 +36,20 @@ const svgSoundMute = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="curr
 // Changelog
 const CHANGELOG_DATA = [
   {
+    version: "v1.4.0",
+    date: "17 de Setembro, 2026",
+    changes: [
+      "Adicionados os filmes 'Demon Slayer: Trem Infinito' e 'Demon Slayer: Castelo Infinito Part.1' na aba Em Breve."
+    ]
+  },
+  {
+    version: "v1.3.0",
+    date: "17 de Setembro, 2026",
+    changes: [
+      "Adicionados os três filmes da trilogia 'Rascal Does Not Dream' ao catálogo principal com opções em 1080p e 720p."
+    ]
+  },
+  {
     version: "v1.2.1",
     date: "16 de Setembro, 2026",
     changes: [
@@ -50,14 +64,6 @@ const CHANGELOG_DATA = [
       "Adicionado painel de histórico de notas de atualização.",
       "Melhorias no player de vídeo e suporte a resoluções.",
       "Ajustes de toque no player e novos títulos 'Em Breve'."
-    ]
-  },
-  {
-    version: "v1.1.0",
-    date: "01 de Setembro, 2026",
-    changes: [
-      "Implementado suporte a salvamento de progresso ('Continuar Assistindo').",
-      "Adicionada a funcionalidade 'Minha Lista'."
     ]
   }
 ];
@@ -82,7 +88,6 @@ function updateNotificationIcon() {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/picanhaflix/sw.js', { scope: '/picanhaflix/' })
     .then(registration => {
-      // Força a busca por atualizações no servidor sem usar o cache local
       registration.update();
       console.log('Service Worker registrado com sucesso no escopo /picanhaflix/');
     })
@@ -144,16 +149,13 @@ window.enableNotifications = async function() {
       closeNotificationBanner();
       updateNotificationIcon();
 
-      // 1. Pega o registro do Service Worker
       const registration = await navigator.serviceWorker.ready;
       
-      // 2. Cria o "endereço de entrega" usando a sua CHAVE PÚBLICA (VAPID)
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: "BOJurSsMJ8gwr3vXtaknMu2zrC_D-CxiEMKuBMGYn2Ey6LXVIGjKpjuXjd8y5_Cq7irmZCtwDzPj_0eUFATNZRQ" // Cole a chave pública do Passo 1
+        applicationServerKey: "BOJurSsMJ8gwr3vXtaknMu2zrC_D-CxiEMKuBMGYn2Ey6LXVIGjKpjuXjd8y5_Cq7irmZCtwDzPj_0eUFATNZRQ"
       });
 
-      // 3. Salva esse endereço no Firestore
       if (currentUser) {
         await setDoc(doc(db, "push_subscriptions", currentUser.uid), subscription.toJSON());
       }
@@ -490,6 +492,52 @@ window.switchProfile = () => renderProfileSelector();
 
 const moviesData = [
   {
+    id: 'rascal_dreaming_girl',
+    title: 'Rascal Does Not Dream of a Dreaming Girl',
+    poster: 'https://cdn.sinemalar.com/images/movie/281745/poster/rascal-does-not-dream-of-a-dreaming-girl-1681869118.jpg',
+    banner: 'https://is2-ssl.mzstatic.com/image/thumb/Ovpc47k2QZAjktK2GQQRYA/1200x675.jpg',
+    match: '99% Relevância',
+    year: '2019',
+    age: '12+',
+    duration: '1h 30m',
+    badge: 'Full HD',
+    synopsis: 'Em Fujisawa, Sakuta Azusagawa está em seu segundo ano do ensino médio. Seus dias felizes com Mai Sakurajima são interrompidos pelo aparecimento de sua primeira paixão, Shoko Makinohara.',
+    sources: [
+      { quality: '1080p Full HD', url: 'https://archive.org/download/rascal-does-not-dream-of-a-dreaming-girl-1080-p-edit/Rascal_Does_Not_Dream_Of_A_Dreaming_Girl_1080P_Edit.mp4', size: '~ 1.8 GB', default: true },
+      { quality: '720p HD', url: 'https://archive.org/download/rascal-does-not-dream-of-a-dreaming-girl-1080-p-edit/Rascal_Does_Not_Dream_Of_A_Dreaming_Girl_720P_Edit.mp4', size: '~ 900 MB' }
+    ]
+  },
+  {
+    id: 'rascal_sister_venturing_out',
+    title: 'Rascal Does Not Dream of a Sister Venturing Out',
+    poster: 'https://images.justwatch.com/poster/307622904/s718/rascal-does-not-dream-of-a-sister-venturing-out.jpg',
+    banner: 'https://is1-ssl.mzstatic.com/image/thumb/01fmauw1HUb9DU-VUl-kJg/1200x675.jpg',
+    match: '98% Relevância',
+    year: '2023',
+    age: '12+',
+    duration: '1h 13m',
+    badge: 'Full HD',
+    synopsis: 'Após um inverno de estresse em relação ao seu futuro, Kaede decide expressar seu desejo de frequentar o mesmo ensino médio de seu irmão Sakuta.',
+    sources: [
+      { quality: '1080p Full HD', url: 'https://archive.org/download/rascal-does-not-dream-of-a-dreaming-girl-1080-p-edit/Rascal_Does_Not_Dream_Of_A_Sister_Venturing_Out_1080P_Edit.mp4', size: '~ 1.5 GB', default: true }
+    ]
+  },
+  {
+    id: 'rascal_knapsack_kid',
+    title: 'Rascal Does Not Dream of a Knapsack Kid',
+    poster: 'https://animotaku.fr/wp-content/uploads/2023/06/film-rascal-does-not-dream-of-a-knapsack-girl-visuel-1.jpeg',
+    banner: 'https://is1-ssl.mzstatic.com/image/thumb/_hQ5fSYwAEOE14pN2tC0mw/1200x675.jpg',
+    match: '98% Relevância',
+    year: '2023',
+    age: '12+',
+    duration: '1h 15m',
+    badge: 'Full HD',
+    synopsis: 'Finalmente chegou o dia da formatura do ensino médio de Mai. Enquanto Sakuta espera por sua namorada, uma garota do primário que se parece exatamente com ela aparece diante dele.',
+    sources: [
+      { quality: '1080p Full HD', url: 'https://archive.org/download/rascal-does-not-dream-of-a-dreaming-girl-1080-p-edit/Rascal_Does_Not_Dream_Of_A_Knapsack_Kid_1080P_Edit.mp4', size: '~ 1.5 GB', default: true }
+    ]
+  },
+  {
     id: 'your_name',
     title: 'Your Name (Kimi no Na wa)',
     poster: 'https://chonthuonghieu.com/wp-content/uploads/2022/01/your-name-7.jpg',
@@ -574,45 +622,31 @@ const moviesData = [
 
 const comingSoonData = [
   {
-    id: 'rascal_dreaming_girl',
-    title: 'Rascal Does Not Dream of a Dreaming Girl',
-    poster: 'https://cdn.sinemalar.com/images/movie/281745/poster/rascal-does-not-dream-of-a-dreaming-girl-1681869118.jpg',
-    banner: 'https://is2-ssl.mzstatic.com/image/thumb/Ovpc47k2QZAjktK2GQQRYA/1200x675.jpg',
+    id: 'demon_slayer_mugren_train',
+    title: 'Demon Slayer: Trem Infinito',
+    poster: 'https://wallpaperaccess.com/full/5627712.jpg',
+    banner: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkgKXqXDOh7Bbj66lo687kXiCqLXSUJH66rM83c-h_X9a0Pnj9d-QvljbXbcNa_6bJiFhmDTS_K4RegdSAp9x_OhVlj4_ORjTYALWkYQhbB51QKeRgJr64HJ7eGWcUdhXulNJoCY7MsdLGqVk9OmGMQ1OH22xaG80P1gXcmLCY4floRRXrFlGt0awddR_x/s3840/demon-slayer-mugen-train-capa.jpg',
     match: '99% Relevância',
     year: 'Em Breve',
-    age: '12+',
-    duration: '1h 30m',
-    badge: 'Full HD',
+    age: '16+',
+    duration: '1h 57m',
+    badge: 'Em Breve',
     isComingSoon: true,
-    synopsis: 'Em Fujisawa, Sakuta Azusagawa está em seu segundo ano do ensino médio. Seus dias felizes com Mai Sakurajima são interrompidos pelo aparecimento de sua primeira paixão, Shoko Makinohara.',
+    synopsis: 'Tanjiro Kamado e seus amigos da Corporação de Caçadores de Demônios acompanham o Pilar das Chamas, Kyojuro Rengoku, para investigar uma série de desaparecimentos misteriosos a bordo do Trem Infinito.',
     sources: []
   },
   {
-    id: 'rascal_sister_venturing_out',
-    title: 'Rascal Does Not Dream of a Sister Venturing Out',
-    poster: 'https://images.justwatch.com/poster/307622904/s718/rascal-does-not-dream-of-a-sister-venturing-out.jpg',
-    banner: 'https://is1-ssl.mzstatic.com/image/thumb/01fmauw1HUb9DU-VUl-kJg/1200x675.jpg',
-    match: '98% Relevância',
+    id: 'demon_slayer_infinity_castle_1',
+    title: 'Demon Slayer: Castelo Infinito Part.1',
+    poster: 'https://teoriageek.com.br/wp-content/uploads/2025/09/Poster-1.jpg',
+    banner: 'https://img.odcdn.com.br/wp-content/uploads/2025/09/demon-slayer-castelo-infinito-1920x1080.jpg',
+    match: '99% Relevância',
     year: 'Em Breve',
-    age: '12+',
-    duration: '1h 13m',
-    badge: 'Full HD',
+    age: '16+',
+    duration: '2h 35m',
+    badge: 'Em Breve',
     isComingSoon: true,
-    synopsis: 'Após um inverno de estresse em relação ao seu futuro, Kaede decide expressar seu desejo de frequentar o mesmo ensino médio de seu irmão Sakuta.',
-    sources: []
-  },
-  {
-    id: 'rascal_knapsack_kid',
-    title: 'Rascal Does Not Dream of a Knapsack Kid',
-    poster: 'https://animotaku.fr/wp-content/uploads/2023/06/film-rascal-does-not-dream-of-a-knapsack-girl-visuel-1.jpeg',
-    banner: 'https://is1-ssl.mzstatic.com/image/thumb/_hQ5fSYwAEOE14pN2tC0mw/1200x675.jpg',
-    match: '98% Relevância',
-    year: 'Em Breve',
-    age: '12+',
-    duration: '1h 15m',
-    badge: 'Full HD',
-    isComingSoon: true,
-    synopsis: 'Finalmente chegou o dia da formatura do ensino médio de Mai. Enquanto Sakuta espera por sua namorada, uma garota do primário que se parece exatamente com ela aparece diante dele.',
+    synopsis: 'A batalha final contra Muzan Kibutsuji começa no traiçoeiro Castelo Infinito. Os Caçadores de Demônios enfrentam os membros mais poderosos das Luas Superiores em uma luta decisiva pela sobrevivência da humanidade.',
     sources: []
   }
 ];
@@ -662,6 +696,11 @@ function renderComingSoonCatalog() {
   const comingSoonCatalog = document.getElementById('comingSoonCatalog');
   if (!comingSoonCatalog) return;
   comingSoonCatalog.innerHTML = '';
+
+  if (comingSoonData.length === 0) {
+    comingSoonCatalog.innerHTML = `<div style="color: #aaa; font-size: 14px; grid-column: 1 / -1;">Não há lançamentos pendentes no momento. Todos os títulos já estão disponíveis no catálogo!</div>`;
+    return;
+  }
 
   comingSoonData.forEach(movie => {
     const card = document.createElement('div');

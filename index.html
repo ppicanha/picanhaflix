@@ -35,6 +35,7 @@
       <h2>Quem está assistindo?</h2>
     </div>
     <div class="profiles-grid" id="profilesGrid"></div>
+    <button class="btn-manage-profiles" onclick="toggleManageProfiles()" id="btnManageProfiles">Gerenciar Perfis</button>
   </div>
 
   <!-- Modal Criar Perfil -->
@@ -42,10 +43,33 @@
     <div class="modal-content profile-modal-content">
       <span class="close-btn" onclick="closeCreateProfileModal()">&times;</span>
       <h3>Criar Perfil</h3>
-      <input type="text" id="newProfileName" placeholder="Nome do perfil" maxlength="15">
-      <label for="newProfileImage" class="file-label">Foto de Perfil (Opcional)</label>
-      <input type="file" id="newProfileImage" accept="image/*">
+      <div class="form-group">
+        <input type="text" id="newProfileName" class="form-input" placeholder="Nome do perfil" maxlength="15">
+      </div>
+      <div class="form-group">
+        <label for="newProfileImage" class="file-label">Foto de Perfil (Opcional)</label>
+        <input type="file" id="newProfileImage" accept="image/*" class="file-input">
+      </div>
       <button class="btn-red" onclick="saveNewProfile()">Salvar</button>
+    </div>
+  </div>
+
+  <!-- Modal Editar Perfil -->
+  <div id="editProfileModal" class="modal" style="display: none;">
+    <div class="modal-content profile-modal-content">
+      <span class="close-btn" onclick="closeEditProfileModal()">&times;</span>
+      <h3>Editar Perfil</h3>
+      <div class="form-group">
+        <input type="text" id="editProfileName" class="form-input" placeholder="Nome do perfil" maxlength="15">
+      </div>
+      <div class="form-group">
+        <label for="editProfileImage" class="file-label">Nova Foto (Opcional)</label>
+        <input type="file" id="editProfileImage" accept="image/*" class="file-input">
+      </div>
+      <div class="modal-buttons-row">
+        <button class="btn-red" onclick="saveEditedProfile()">Salvar Alterações</button>
+        <button class="btn-delete" onclick="deleteProfile()">Excluir Perfil</button>
+      </div>
     </div>
   </div>
 
@@ -58,6 +82,7 @@
           <a id="tabHome" class="active" onclick="showCatalogSection('home')">Início</a>
           <a id="tabMyList" onclick="showCatalogSection('myList')">Minha Lista</a>
           <a id="tabComingSoon" onclick="showCatalogSection('comingSoon')">Em Breve</a>
+          <a id="tabSuggestions" onclick="showCatalogSection('suggestions')">Sugestões</a>
         </nav>
       </div>
       <div class="nav-right">
@@ -66,12 +91,10 @@
           <div id="searchResultsDropdown" class="search-dropdown" style="display: none;"></div>
         </div>
 
-        <!-- Ícone de Notificação -->
         <button id="btnNotificationToggle" class="icon-button" onclick="toggleNotificationSetting()" title="Notificações">
           🔔
         </button>
 
-        <!-- Botão de Changelog / Novidades -->
         <button class="btn-changelog icon-button" onclick="openChangelogModal()" title="Notas de Atualização">
           <span class="changelog-icon">📋</span>
           <span id="changelogBadge" class="badge-dot" style="display: none;"></span>
@@ -86,7 +109,6 @@
     </header>
 
     <main class="content-container">
-      <!-- Seção Início -->
       <section id="homeSection">
         <div id="continueSection" style="display: none;">
           <h2 class="section-title">Continuar Assistindo</h2>
@@ -97,20 +119,61 @@
         <div id="mainCatalog" class="movies-grid"></div>
       </section>
 
-      <!-- Seção Minha Lista -->
       <section id="myListSection" style="display: none;">
         <h2 class="section-title">Minha Lista</h2>
         <div id="myListCatalog" class="movies-grid"></div>
       </section>
 
-      <!-- Seção Em Breve -->
       <section id="comingSoonSection" style="display: none;">
         <h2 class="section-title">Em Breve</h2>
         <div id="comingSoonCatalog" class="movies-grid"></div>
       </section>
+
+      <section id="suggestionsSection" style="display: none;">
+        <div class="suggestions-container">
+          <h2 class="section-title">Sugestões de Filmes</h2>
+          <p class="suggestions-intro">Pensou em algum filme incrível que queria ver por aqui? Mande sua sugestão para a gente adicionar ao catálogo!</p>
+          
+          <form id="suggestionForm" onsubmit="sendSuggestion(event)" class="suggestion-card">
+            <div class="form-group">
+              <label for="suggestionName" class="file-label">Nome do Filme *</label>
+              <input type="text" id="suggestionName" class="form-input" placeholder="Ex: A Viagem de Chihiro" required>
+            </div>
+
+            <div class="form-group">
+              <label for="suggestionAudio" class="file-label">Esse filme é Legendado ou Dublado? *</label>
+              <select id="suggestionAudio" class="form-input form-select" onchange="toggleSubtitleOption()" required>
+                <option value="" disabled selected>Selecione uma opção...</option>
+                <option value="Dublado">Dublado</option>
+                <option value="Legendado">Legendado</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="ptSubtitleGroup" style="display: none;">
+              <label for="suggestionPtSubtitle" class="file-label">Esse filme tem legendas em Português(Brasileiro) ou não? *</label>
+              <select id="suggestionPtSubtitle" class="form-input form-select">
+                <option value="" disabled selected>Selecione uma opção...</option>
+                <option value="Sim, tem legendas em PT-BR">Sim, tem legendas em PT-BR</option>
+                <option value="Não tem legendas em PT-BR">Não tem legendas em PT-BR</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="suggestionDetails" class="file-label">Por que você quer ver este filme? (Opcional)</label>
+              <textarea id="suggestionDetails" class="form-input form-textarea" placeholder="Conte mais sobre o filme ou por que ele deveria estar aqui..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="suggestionImage" class="file-label">Foto / Capa do Filme (Opcional)</label>
+              <input type="file" id="suggestionImage" accept="image/*" class="file-input">
+            </div>
+
+            <button type="submit" id="btnSubmitSuggestion" class="btn-red">Enviar Sugestão</button>
+          </form>
+        </div>
+      </section>
     </main>
 
-    <!-- Modal Detalhes do Filme -->
     <div id="movieModal" class="modal" style="display: none;">
       <div class="modal-content movie-modal-content">
         <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -133,7 +196,6 @@
       </div>
     </div>
 
-    <!-- Pop-up de Permissão de Notificações -->
     <div id="notificationBanner" class="notification-banner" style="display: none;">
       <div class="notification-banner-content">
         <p>Deseja ativar as notificações para receber avisos sobre novos filmes e atualizações do PicanhaFlix?</p>
@@ -144,7 +206,6 @@
       </div>
     </div>
 
-    <!-- Modal Changelog / Notas de Atualização -->
     <div id="changelogModal" class="modal" style="display: none;">
       <div class="modal-content">
         <span class="close-btn" onclick="closeChangelogModal()">&times;</span>
@@ -153,7 +214,6 @@
       </div>
     </div>
 
-    <!-- Player de Vídeo Customizado -->
     <div id="playerView" class="player-container" style="display: none;">
       <video id="videoPlayer" class="video-element">
         <source id="videoSource" src="" type="video/mp4">

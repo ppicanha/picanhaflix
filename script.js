@@ -28,49 +28,42 @@ let currentSelectedMovie = null;
 let currentHistory = {};
 let controlsTimeout = null;
 let notificationTimeout = null;
+let isManageProfilesMode = false;
+let editingProfileIndex = null;
 
 // Ícones SVG
 const svgSoundOn = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
-const svgSoundMute = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
+const svgSoundMute = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
 
 // Changelog
 const CHANGELOG_DATA = [
   {
-    version: "v1.4.0",
-    date: "17 de Setembro, 2026",
+    version: "v1.8.0",
+    date: "18 de Setembro, 2026",
     changes: [
-      "Adicionados os filmes 'Demon Slayer: Trem Infinito' e 'Demon Slayer: Castelo Infinito Part.1' na aba Em Breve."
+      "Adicionada a aba 'Sugestões' para o envio direto de ideias de filmes para a plataforma com foto opcional.",
+      "Adicionadas opções detalhadas de áudio (Dublado/Legendado) e verificação de legendas em PT-BR nas sugestões."
     ]
   },
   {
-    version: "v1.3.0",
-    date: "17 de Setembro, 2026",
+    version: "v1.7.0",
+    date: "18 de Setembro, 2026",
     changes: [
-      "Adicionados os três filmes da trilogia 'Rascal Does Not Dream' ao catálogo principal com opções em 1080p e 720p."
+      "Adicionado o filme 'Suzume' (Makoto Shinkai) à aba Em Breve!"
     ]
   },
   {
-    version: "v1.2.1",
-    date: "16 de Setembro, 2026",
+    version: "v1.6.0",
+    date: "18 de Setembro, 2026",
     changes: [
-      "Correção de layout: Remoção do ícone de notificação duplicado na exibição mobile."
-    ]
-  },
-  {
-    version: "v1.2.0",
-    date: "16 de Setembro, 2026",
-    changes: [
-      "Adicionado suporte nativo a Notificações Push do sistema.",
-      "Adicionado painel de histórico de notas de atualização.",
-      "Melhorias no player de vídeo e suporte a resoluções.",
-      "Ajustes de toque no player e novos títulos 'Em Breve'."
+      "Adicionado o recurso de Gerenciamento e Edição de Perfis!",
+      "Opção de alterar nome, imagem e remover perfis configurados."
     ]
   }
 ];
 
 const LATEST_VERSION = CHANGELOG_DATA[0].version;
 
-// Sistema de Notificações
 function updateNotificationIcon() {
   const btn = document.getElementById("btnNotificationToggle");
   if (!btn) return;
@@ -89,9 +82,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/picanhaflix/sw.js', { scope: '/picanhaflix/' })
     .then(registration => {
       registration.update();
-      console.log('Service Worker registrado com sucesso no escopo /picanhaflix/');
     })
-    .catch(err => console.error('Erro ao registrar o Service Worker:', err));
+    .catch(err => console.error('Erro SW:', err));
 }
 
 window.sendSystemNotification = function(title, body, icon = "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png") {
@@ -105,10 +97,10 @@ window.toggleNotificationSetting = async function() {
 
   if (current) {
     localStorage.setItem("notificationsEnabled", "false");
-    alert("Notificações desativadas nas configurações do aplicativo.");
+    alert("Notificações desativadas.");
   } else {
     if (!("Notification" in window)) {
-      alert("Seu navegador não suporta notificações de sistema.");
+      alert("Seu navegador não suporta notificações.");
       return;
     }
 
@@ -119,7 +111,7 @@ window.toggleNotificationSetting = async function() {
       sendSystemNotification("PicanhaFlix", "Notificações ativadas com sucesso!");
     } else {
       localStorage.setItem("notificationsEnabled", "false");
-      alert("Permissão de notificação negada pelo navegador.");
+      alert("Permissão negada.");
     }
   }
   updateNotificationIcon();
@@ -160,11 +152,11 @@ window.enableNotifications = async function() {
         await setDoc(doc(db, "push_subscriptions", currentUser.uid), subscription.toJSON());
       }
 
-      sendSystemNotification("PicanhaFlix", "Notificações ativadas com sucesso!");
+      sendSystemNotification("PicanhaFlix", "Notificações ativadas!");
       return;
     }
   }
-  alert("Não foi possível ativar as notificações do navegador.");
+  alert("Não foi possível ativar as notificações.");
   closeNotificationBanner();
 };
 
@@ -323,18 +315,34 @@ function renderProfileSelector() {
   const grid = document.getElementById('profilesGrid');
   grid.innerHTML = '';
 
+  const btnManage = document.getElementById('btnManageProfiles');
+  if (btnManage) {
+    btnManage.innerText = isManageProfilesMode ? "Concluído" : "Gerenciar Perfis";
+  }
+
   userProfiles.forEach((profile, idx) => {
     const card = document.createElement('div');
-    card.className = 'profile-card';
-    card.onclick = () => selectProfile(idx);
+    card.className = `profile-card ${isManageProfilesMode ? 'edit-mode' : ''}`;
+    
+    card.onclick = () => {
+      if (isManageProfilesMode) {
+        openEditProfileModal(idx);
+      } else {
+        selectProfile(idx);
+      }
+    };
+
     card.innerHTML = `
-      <img src="${profile.avatar}" class="profile-avatar">
+      <div class="profile-avatar-container">
+        <img src="${profile.avatar}" class="profile-avatar">
+        ${isManageProfilesMode ? '<div class="profile-edit-icon">&#9998;</div>' : ''}
+      </div>
       <span class="profile-name">${profile.name}</span>
     `;
     grid.appendChild(card);
   });
 
-  if (userProfiles.length < 6) {
+  if (!isManageProfilesMode && userProfiles.length < 6) {
     const addBtn = document.createElement('div');
     addBtn.className = 'profile-card';
     addBtn.onclick = openCreateProfileModal;
@@ -345,6 +353,11 @@ function renderProfileSelector() {
     grid.appendChild(addBtn);
   }
 }
+
+window.toggleManageProfiles = function() {
+  isManageProfilesMode = !isManageProfilesMode;
+  renderProfileSelector();
+};
 
 function selectProfile(idx) {
   activeProfileIndex = idx;
@@ -362,6 +375,21 @@ function selectProfile(idx) {
   renderComingSoonCatalog();
   loadContinueWatching();
 }
+
+window.openCreateProfileModal = () => document.getElementById('profileModal').style.display = 'flex';
+window.closeCreateProfileModal = () => document.getElementById('profileModal').style.display = 'none';
+
+window.openEditProfileModal = (idx) => {
+  editingProfileIndex = idx;
+  const profile = userProfiles[idx];
+  document.getElementById('editProfileName').value = profile.name;
+  document.getElementById('editProfileModal').style.display = 'flex';
+};
+
+window.closeEditProfileModal = () => {
+  document.getElementById('editProfileModal').style.display = 'none';
+  editingProfileIndex = null;
+};
 
 window.saveNewProfile = async function() {
   const nameInput = document.getElementById('newProfileName').value.trim();
@@ -398,6 +426,54 @@ window.saveNewProfile = async function() {
   document.getElementById('newProfileName').value = '';
   document.getElementById('newProfileImage').value = '';
   renderProfileSelector();
+};
+
+window.saveEditedProfile = async function() {
+  if (editingProfileIndex === null) return;
+
+  const nameInput = document.getElementById('editProfileName').value.trim();
+  const fileInput = document.getElementById('editProfileImage').files[0];
+
+  if (!nameInput) return alert('Por favor, digite um nome para o perfil.');
+
+  let avatarUrl = userProfiles[editingProfileIndex].avatar;
+
+  if (fileInput) {
+    try {
+      const fileRef = ref(storage, `avatars/${currentUser.uid}_${Date.now()}_${fileInput.name}`);
+      await uploadBytes(fileRef, fileInput);
+      avatarUrl = await getDownloadURL(fileRef);
+    } catch (e) {
+      console.error("Erro ao atualizar foto do perfil:", e);
+    }
+  }
+
+  userProfiles[editingProfileIndex].name = nameInput;
+  userProfiles[editingProfileIndex].avatar = avatarUrl;
+
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { profiles: userProfiles });
+
+  closeEditProfileModal();
+  renderProfileSelector();
+};
+
+window.deleteProfile = async function() {
+  if (editingProfileIndex === null) return;
+
+  if (userProfiles.length <= 1) {
+    return alert("Sua conta precisa ter pelo menos um perfil.");
+  }
+
+  if (confirm("Tem certeza que deseja excluir este perfil?")) {
+    userProfiles.splice(editingProfileIndex, 1);
+    
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, { profiles: userProfiles });
+
+    closeEditProfileModal();
+    renderProfileSelector();
+  }
 };
 
 window.syncHistoryToCloud = async function() {
@@ -455,18 +531,22 @@ window.showCatalogSection = function(section) {
   const homeSection = document.getElementById('homeSection');
   const myListSection = document.getElementById('myListSection');
   const comingSoonSection = document.getElementById('comingSoonSection');
+  const suggestionsSection = document.getElementById('suggestionsSection');
 
   const tabHome = document.getElementById('tabHome');
   const tabMyList = document.getElementById('tabMyList');
   const tabComingSoon = document.getElementById('tabComingSoon');
+  const tabSuggestions = document.getElementById('tabSuggestions');
 
   homeSection.style.display = 'none';
   myListSection.style.display = 'none';
   comingSoonSection.style.display = 'none';
+  if (suggestionsSection) suggestionsSection.style.display = 'none';
 
   tabHome.classList.remove('active');
   tabMyList.classList.remove('active');
   tabComingSoon.classList.remove('active');
+  if (tabSuggestions) tabSuggestions.classList.remove('active');
 
   if (section === 'myList') {
     myListSection.style.display = 'block';
@@ -478,6 +558,10 @@ window.showCatalogSection = function(section) {
     tabComingSoon.classList.add('active');
     renderComingSoonCatalog();
     closeNotificationBanner();
+  } else if (section === 'suggestions') {
+    if (suggestionsSection) suggestionsSection.style.display = 'block';
+    if (tabSuggestions) tabSuggestions.classList.add('active');
+    closeNotificationBanner();
   } else {
     homeSection.style.display = 'block';
     tabHome.classList.add('active');
@@ -486,11 +570,123 @@ window.showCatalogSection = function(section) {
   }
 };
 
-window.openCreateProfileModal = () => document.getElementById('profileModal').style.display = 'flex';
-window.closeCreateProfileModal = () => document.getElementById('profileModal').style.display = 'none';
-window.switchProfile = () => renderProfileSelector();
+window.toggleSubtitleOption = function() {
+  const audioVal = document.getElementById('suggestionAudio').value;
+  const ptSubtitleGroup = document.getElementById('ptSubtitleGroup');
+  const ptSubtitleSelect = document.getElementById('suggestionPtSubtitle');
+
+  if (audioVal === 'Legendado') {
+    ptSubtitleGroup.style.display = 'block';
+    ptSubtitleSelect.required = true;
+  } else {
+    ptSubtitleGroup.style.display = 'none';
+    ptSubtitleSelect.required = false;
+    ptSubtitleSelect.value = '';
+  }
+};
+
+window.sendSuggestion = async function(event) {
+  event.preventDefault();
+
+  const movieName = document.getElementById('suggestionName').value.trim();
+  const movieAudio = document.getElementById('suggestionAudio').value;
+  const moviePtSubtitle = document.getElementById('suggestionPtSubtitle').value;
+  const movieDetails = document.getElementById('suggestionDetails').value.trim();
+  const fileInput = document.getElementById('suggestionImage').files[0];
+  const btnSubmit = document.getElementById('btnSubmitSuggestion');
+
+  if (!movieName) {
+    alert("Por favor, digite o nome do filme.");
+    return;
+  }
+
+  if (!movieAudio) {
+    alert("Por favor, selecione se o filme é Legendado ou Dublado.");
+    return;
+  }
+
+  if (movieAudio === 'Legendado' && !moviePtSubtitle) {
+    alert("Por favor, informe se o filme tem legendas em Português(Brasileiro).");
+    return;
+  }
+
+  btnSubmit.disabled = true;
+  btnSubmit.innerText = "Enviando...";
+
+  try {
+    const formData = new FormData();
+    formData.append("Filme Sugerido", movieName);
+    formData.append("Tipo de Áudio", movieAudio);
+    if (movieAudio === 'Legendado') {
+      formData.append("Legendas PT-BR", moviePtSubtitle);
+    }
+    formData.append("Observações", movieDetails || "Nenhuma observação informada");
+    formData.append("Usuário", currentUser ? currentUser.email : "Anônimo");
+    formData.append("_subject", `Nova Sugestão de Filme: ${movieName}`);
+    formData.append("_template", "table");
+    formData.append("_captcha", "false");
+
+    if (fileInput) {
+      formData.append("Anexo/Poster", fileInput);
+    }
+
+    const response = await fetch("https://formsubmit.co/ajax/microfonedepedro1@gmail.com", {
+      method: "POST",
+      body: formData
+    });
+
+    if (response.ok) {
+      alert("Sua sugestão foi enviada com sucesso! Muito obrigado.");
+      document.getElementById('suggestionForm').reset();
+      window.toggleSubtitleOption();
+    } else {
+      alert("Houve um erro ao enviar sua sugestão. Tente novamente em instantes.");
+    }
+  } catch (err) {
+    console.error("Erro ao enviar sugestão:", err);
+    alert("Erro de conexão ao enviar a sugestão.");
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.innerText = "Enviar Sugestão";
+  }
+};
+
+window.switchProfile = () => {
+  isManageProfilesMode = false;
+  renderProfileSelector();
+};
 
 const moviesData = [
+  {
+    id: 'demon_slayer_mugen_train',
+    title: 'Demon Slayer: Trem Infinito',
+    poster: 'https://wallpaperaccess.com/full/5627712.jpg',
+    banner: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkgKXqXDOh7Bbj66lo687kXiCqLXSUJH66rM83c-h_X9a0Pnj9d-QvljbXbcNa_6bJiFhmDTS_K4RegdSAp9x_OhVlj4_ORjTYALWkYQhbB51QKeRgJr64HJ7eGWcUdhXulNJoCY7MsdLGqVk9OmGMQ1OH22xaG80P1gXcmLCY4floRRXrFlGt0awddR_x/s3840/demon-slayer-mugen-train-capa.jpg',
+    match: '99% Relevância',
+    year: '2020',
+    age: '16+',
+    duration: '1h 57m',
+    badge: 'Full HD',
+    synopsis: 'Tanjiro Kamado e seus amigos da Corporação de Caçadores de Demônios acompanham o Pilar das Chamas, Kyojuro Rengoku, para investigar uma série de desaparecimentos misteriosos a bordo do Trem Infinito.',
+    sources: [
+      { quality: '1080p Full HD', url: 'https://archive.org/download/demon-slayer-castelo-infinito-part-1-1080p-edit/Demon_Slayer_Mugen_Train_1080p_Edit.mkv', size: '~ 2.1 GB', default: true }
+    ]
+  },
+  {
+    id: 'demon_slayer_infinity_castle_1',
+    title: 'Demon Slayer: Castelo Infinito Part.1',
+    poster: 'https://teoriageek.com.br/wp-content/uploads/2025/09/Poster-1.jpg',
+    banner: 'https://img.odcdn.com.br/wp-content/uploads/2025/09/demon-slayer-castelo-infinito-1920x1080.jpg',
+    match: '99% Relevância',
+    year: '2025',
+    age: '16+',
+    duration: '2h 35m',
+    badge: 'Full HD',
+    synopsis: 'A batalha final contra Muzan Kibutsuji começa no traiçoeiro Castelo Infinito. Os Caçadores de Demônios enfrentam os membros mais poderosos das Luas Superiores em uma luta decisiva pela sobrevivência da humanidade.',
+    sources: [
+      { quality: '1080p Full HD', url: 'https://archive.org/download/demon-slayer-castelo-infinito-part-1-1080p-edit/Demon_Slayer_Castelo_Infinito_Part1_1080p_Edit.mkv', size: '~ 2.8 GB', default: true }
+    ]
+  },
   {
     id: 'rascal_dreaming_girl',
     title: 'Rascal Does Not Dream of a Dreaming Girl',
@@ -622,31 +818,17 @@ const moviesData = [
 
 const comingSoonData = [
   {
-    id: 'demon_slayer_mugren_train',
-    title: 'Demon Slayer: Trem Infinito',
-    poster: 'https://wallpaperaccess.com/full/5627712.jpg',
-    banner: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkgKXqXDOh7Bbj66lo687kXiCqLXSUJH66rM83c-h_X9a0Pnj9d-QvljbXbcNa_6bJiFhmDTS_K4RegdSAp9x_OhVlj4_ORjTYALWkYQhbB51QKeRgJr64HJ7eGWcUdhXulNJoCY7MsdLGqVk9OmGMQ1OH22xaG80P1gXcmLCY4floRRXrFlGt0awddR_x/s3840/demon-slayer-mugen-train-capa.jpg',
-    match: '99% Relevância',
-    year: 'Em Breve',
-    age: '16+',
-    duration: '1h 57m',
+    id: 'suzume',
+    title: 'Suzume (Suzume no Tojimari)',
+    poster: 'https://res.cloudinary.com/jnto/image/upload/w_2006,h_2838,c_fill,f_auto,fl_lossy,q_60/v1/media/filer_public/d0/bb/d0bb19b5-3bb8-4e16-9e93-4baedaf3136d/suzume_fint6z',
+    banner: 'https://images5.alphacoders.com/119/1198137.jpg',
+    match: '98% Relevância',
+    year: '2022',
+    age: '12+',
+    duration: '2h 02m',
     badge: 'Em Breve',
     isComingSoon: true,
-    synopsis: 'Tanjiro Kamado e seus amigos da Corporação de Caçadores de Demônios acompanham o Pilar das Chamas, Kyojuro Rengoku, para investigar uma série de desaparecimentos misteriosos a bordo do Trem Infinito.',
-    sources: []
-  },
-  {
-    id: 'demon_slayer_infinity_castle_1',
-    title: 'Demon Slayer: Castelo Infinito Part.1',
-    poster: 'https://teoriageek.com.br/wp-content/uploads/2025/09/Poster-1.jpg',
-    banner: 'https://img.odcdn.com.br/wp-content/uploads/2025/09/demon-slayer-castelo-infinito-1920x1080.jpg',
-    match: '99% Relevância',
-    year: 'Em Breve',
-    age: '16+',
-    duration: '2h 35m',
-    badge: 'Em Breve',
-    isComingSoon: true,
-    synopsis: 'A batalha final contra Muzan Kibutsuji começa no traiçoeiro Castelo Infinito. Os Caçadores de Demônios enfrentam os membros mais poderosos das Luas Superiores em uma luta decisiva pela sobrevivência da humanidade.',
+    synopsis: 'Suzume, uma garota de 17 anos que mora em uma cidade pacata em Kyushu, conhece um jovem viajante em busca de uma porta. Ao segui-lo até as ruínas nas montanhas, ela encontra uma porta antiga e, ao abri-la, desencadeia portais de destruição por todo o Japão. Agora, Suzume precisa embarcar em uma jornada para fechar essas portas e evitar desastres iminentes.',
     sources: []
   }
 ];
@@ -752,7 +934,7 @@ window.openModal = function(movieId) {
           const item = document.createElement('a');
           item.className = 'download-item';
           item.href = src.url;
-          item.download = `${currentSelectedMovie.title}_${src.quality}.mp4`;
+          item.download = `${currentSelectedMovie.title}_${src.quality}.mkv`;
           item.innerHTML = `
             <span><b>${src.quality}</b></span>
             <span style="font-size:12px; color:#aaa;">${src.size}</span>
@@ -920,7 +1102,7 @@ window.restartMovie = function() {
   startStreaming(currentSelectedMovie, 0, defaultSource.url);
 };
 
-function startStreaming(movie, savedTime = 0, savedQualityUrl = null) {
+async function startStreaming(movie, savedTime = 0, savedQualityUrl = null) {
   currentSelectedMovie = movie;
   closeModal();
   closeSearchDropdown();
@@ -945,6 +1127,20 @@ function startStreaming(movie, savedTime = 0, savedQualityUrl = null) {
 
   document.getElementById('playerView').style.display = 'block';
 
+  try {
+    if (playerView.requestFullscreen) {
+      await playerView.requestFullscreen();
+    } else if (playerView.webkitRequestFullscreen) {
+      await playerView.webkitRequestFullscreen();
+    }
+
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock("landscape").catch(() => {});
+    }
+  } catch (err) {
+    console.log("Modo tela cheia não suportado ou negado pelo navegador:", err);
+  }
+
   player.currentTime = savedTime;
   player.play().then(() => {
     updatePlayPauseState(false);
@@ -959,8 +1155,17 @@ window.closePlayer = function() {
   player.pause();
   saveProgress();
   document.getElementById('playerView').style.display = 'none';
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {});
+
+  if (screen.orientation && screen.orientation.unlock) {
+    screen.orientation.unlock();
+  }
+
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
   }
   loadContinueWatching();
 };
@@ -1002,10 +1207,24 @@ window.seekVideo = function(val) {
 };
 
 window.toggleFullscreen = function() {
-  if (!document.fullscreenElement) {
-    playerView.requestFullscreen().catch(err => alert(err.message));
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (playerView.requestFullscreen) {
+      playerView.requestFullscreen().catch(err => alert(err.message));
+    } else if (playerView.webkitRequestFullscreen) {
+      playerView.webkitRequestFullscreen();
+    }
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock("landscape").catch(() => {});
+    }
   } else {
-    document.exitFullscreen();
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
   }
 };
 

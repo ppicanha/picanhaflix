@@ -614,8 +614,8 @@ const moviesData = [
     badge: 'Full HD',
     synopsis: 'Dividido em três partes, o filme conta a história de Takaki Tono e sua amiga de infância Akari Shinohara. À medida que o tempo passa e a distância física entre eles aumenta por causa das mudanças de suas famílias, a conexão afetiva entre os dois é testada sob o efeito inexorável do tempo.',
     sources: [
-      { quality: '1080p Full HD', url: 'https://archive.org/download/5-centimetros-por-segundo-1080-p-fhd/5%20Cent%C3%ADmetros%20Por%20Segundo%201080P%20Fhd.mp4', size: '~ 1.2 GB', default: true },
-      { quality: '720p HD', url: 'https://archive.org/download/5-centimetros-por-segundo-1080-p-fhd/5%20Cent%C3%ADmetros%20Por%20Segundo%20720P%20Hd.mp4', size: '~ 600 MB' }
+      { quality: '1080p Full HD', url: 'https://archive.org/download/5-centimetros-por-segundo-720p/5_Centimetros_por_Segundo_720p.mp4', size: '~ 1.2 GB', default: true },
+      { quality: '720p HD', url: 'https://archive.org/download/5-centimetros-por-segundo-720p/5_Centimetros_por_Segundo_1080p.mp4', size: '~ 600 MB' }
     ]
   }
 ];

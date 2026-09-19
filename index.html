@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PicanhaFlix</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +36,18 @@
       <h2>Quem está assistindo?</h2>
     </div>
     <div class="profiles-grid" id="profilesGrid"></div>
+    
+    <!-- Ícones de Ações Rápidas adicionados na tela de perfil -->
+    <div class="profile-actions-bar">
+      <button id="btnNotificationToggle" class="icon-button" onclick="toggleNotificationSetting()" title="Notificações">
+        🔔
+      </button>
+      <button class="btn-changelog icon-button" onclick="openChangelogModal()" title="Notas de Atualização">
+        <span class="changelog-icon">📋</span>
+        <span id="changelogBadge" class="badge-dot" style="display: none;"></span>
+      </button>
+    </div>
+
     <button class="btn-manage-profiles" onclick="toggleManageProfiles()" id="btnManageProfiles">Gerenciar Perfis</button>
   </div>
 
@@ -76,47 +89,57 @@
   <!-- Aplicação Principal -->
   <div id="main-app" style="display: none;">
     <header class="navbar">
-      <div class="nav-left">
-        <h1 class="logo" onclick="showCatalogSection('home')">PICANHAFLIX</h1>
-        <nav class="nav-links">
-          <a id="tabHome" class="active" onclick="showCatalogSection('home')">Início</a>
-          <a id="tabMyList" onclick="showCatalogSection('myList')">Minha Lista</a>
-          <a id="tabComingSoon" onclick="showCatalogSection('comingSoon')">Em Breve</a>
-          <a id="tabSuggestions" onclick="showCatalogSection('suggestions')">Sugestões</a>
-        </nav>
-      </div>
+      <a class="logo" onclick="showCatalogSection('home')">PICANHA<span>FLIX</span></a>
+      
+      <nav class="nav-links" id="navLinks">
+        <a id="tabHome" class="active" onclick="showCatalogSection('home')">Início</a>
+        <a id="tabMyList" onclick="showCatalogSection('myList')">Minha Lista</a>
+        <a id="tabComingSoon" onclick="showCatalogSection('comingSoon')">Em Breve</a>
+        <a id="tabSuggestions" onclick="showCatalogSection('suggestions')">Sugestões</a>
+      </nav>
+
       <div class="nav-right">
         <div class="search-container">
           <input type="text" id="searchInput" placeholder="Buscar filmes..." onkeyup="searchMovies()">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <div id="searchResultsDropdown" class="search-dropdown" style="display: none;"></div>
         </div>
-
-        <button id="btnNotificationToggle" class="icon-button" onclick="toggleNotificationSetting()" title="Notificações">
-          🔔
-        </button>
-
-        <button class="btn-changelog icon-button" onclick="openChangelogModal()" title="Notas de Atualização">
-          <span class="changelog-icon">📋</span>
-          <span id="changelogBadge" class="badge-dot" style="display: none;"></span>
-        </button>
 
         <div class="user-profile-menu">
           <img id="headerAvatar" src="" class="header-avatar" onclick="switchProfile()">
           <span id="headerName" class="header-name"></span>
           <button class="btn-logout" onclick="logout()">Sair</button>
         </div>
+
+        <div class="menu-btn" id="menuBtn">
+          <i class="fa-solid fa-bars"></i>
+        </div>
       </div>
     </header>
 
     <main class="content-container">
       <section id="homeSection">
-        <div id="continueSection" style="display: none;">
-          <h2 class="section-title">Continuar Assistindo</h2>
-          <div id="continueCatalog" class="movies-grid"></div>
+        <!-- Banner de Recomendação Rotativa (Atualiza a cada 30 min) -->
+        <div id="recommendationBanner" class="recommendation-banner">
+          <div class="rec-overlay">
+            <span class="rec-badge"><i class="fa-solid fa-fire"></i> Recomendação para você</span>
+            <h1 id="recTitle" class="rec-title"></h1>
+            <p id="recSynopsis" class="rec-synopsis"></p>
+            <div class="rec-actions">
+              <button class="btn-play" onclick="watchRecommendedMovie()"><i class="fa-solid fa-play"></i> Assistir</button>
+              <button class="btn-secondary" onclick="openMovieFromRecommendation()"><i class="fa-solid fa-circle-info"></i> Detalhes</button>
+            </div>
+          </div>
         </div>
 
         <h2 class="section-title">Catálogo Principal</h2>
         <div id="mainCatalog" class="movies-grid"></div>
+
+        <!-- Continuar Assistindo posicionado abaixo dos títulos principais -->
+        <div id="continueSection" style="display: none; margin-top: 30px;">
+          <h2 class="section-title">Continuar Assistindo</h2>
+          <div id="continueCatalog" class="movies-grid"></div>
+        </div>
       </section>
 
       <section id="myListSection" style="display: none;">
@@ -172,8 +195,45 @@
           </form>
         </div>
       </section>
+
+      <!-- Página exclusiva Mobile de um filme -->
+      <section id="mobileMoviePage" class="mobile-movie-page" style="display: none;">
+        <button class="btn-back-mobile" onclick="closeMobileMoviePage()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+        <div class="mobile-movie-hero">
+          <img id="mobilePoster" src="" alt="Capa do filme" class="mobile-poster">
+        </div>
+        <div class="mobile-movie-details">
+          <h1 id="mobileTitle"></h1>
+          <div id="mobileMeta" class="modal-meta"></div>
+          
+          <div class="mobile-primary-actions">
+            <button class="btn-play mobile-btn-play" onclick="handleWatchClick()"><span id="mobileBtnWatchText">&#9654; Assistir</span></button>
+            <button id="mobileBtnRestart" class="btn-secondary mobile-btn-restart" style="display: none;" onclick="restartMovie()"><i class="fa-solid fa-rotate-left"></i> Recomeçar</button>
+          </div>
+
+          <div class="mobile-secondary-actions">
+            <div id="mobileBtnDownload" class="download-container">
+              <button class="btn-secondary" onclick="toggleDownloadMenu()"><i class="fa-solid fa-download"></i> Baixar</button>
+              <div id="mobileDownloadMenu" class="download-menu" style="display: none;"></div>
+            </div>
+
+            <div class="icon-action-item" onclick="toggleMyList()">
+              <span class="icon-label">Minha lista</span>
+              <button class="icon-action-btn" id="btnMyListIcon"><i class="fa-solid fa-plus"></i></button>
+            </div>
+
+            <div class="icon-action-item" onclick="toggleLikeMovie()">
+              <span class="icon-label">Curtir</span>
+              <button class="icon-action-btn" id="btnLikeIcon"><i class="fa-regular fa-thumbs-up"></i></button>
+            </div>
+          </div>
+
+          <p id="mobileSynopsis" class="mobile-synopsis"></p>
+        </div>
+      </section>
     </main>
 
+    <!-- Pop-up (PC) -->
     <div id="movieModal" class="modal" style="display: none;">
       <div class="modal-content movie-modal-content">
         <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -184,7 +244,17 @@
             <div class="modal-actions">
               <button class="btn-play" onclick="handleWatchClick()"><span id="btnWatchText">&#9654; Assistir</span></button>
               <button id="btnRestart" class="btn-secondary" style="display: none;" onclick="restartMovie()">&#8634; Do Início</button>
-              <button class="btn-secondary" onclick="toggleMyList()"><span id="btnMyListText">+ Minha Lista</span></button>
+              
+              <div class="icon-action-item" onclick="toggleMyList()">
+                <span class="icon-label">Minha lista</span>
+                <button class="icon-action-btn" id="btnMyListIconPc"><i class="fa-solid fa-plus"></i></button>
+              </div>
+
+              <div class="icon-action-item" onclick="toggleLikeMovie()">
+                <span class="icon-label">Curtir</span>
+                <button class="icon-action-btn" id="btnLikeIconPc"><i class="fa-regular fa-thumbs-up"></i></button>
+              </div>
+
               <div id="btnDownload" class="download-container">
                 <button class="btn-secondary" onclick="toggleDownloadMenu()">&#129093; Baixar</button>
                 <div id="downloadMenu" class="download-menu" style="display: none;"></div>

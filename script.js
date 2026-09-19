@@ -25,9 +25,11 @@ let userProfiles = [];
 let isIntroFinished = false;
 let pendingAuthUser = null;
 let currentSelectedMovie = null;
+let recommendedMovie = null;
 let currentHistory = {};
 let controlsTimeout = null;
 let notificationTimeout = null;
+let recommendationInterval = null;
 let isManageProfilesMode = false;
 let editingProfileIndex = null;
 
@@ -38,26 +40,21 @@ const svgSoundMute = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="curr
 // Changelog
 const CHANGELOG_DATA = [
   {
-    version: "v1.8.0",
+    version: "v2.0.0",
     date: "18 de Setembro, 2026",
     changes: [
-      "Adicionada a aba 'Sugestões' para o envio direto de ideias de filmes para a plataforma com foto opcional.",
-      "Adicionadas opções detalhadas de áudio (Dublado/Legendado) e verificação de legendas em PT-BR nas sugestões."
+      "Ícones de notificações e logs movidos para a tela de seleção de perfil.",
+      "Layout do catálogo ajustado para carrossel/deslize lateral em todas as seções."
     ]
   },
   {
-    version: "v1.7.0",
+    version: "v1.9.0",
     date: "18 de Setembro, 2026",
     changes: [
-      "Adicionado o filme 'Suzume' (Makoto Shinkai) à aba Em Breve!"
-    ]
-  },
-  {
-    version: "v1.6.0",
-    date: "18 de Setembro, 2026",
-    changes: [
-      "Adicionado o recurso de Gerenciamento e Edição de Perfis!",
-      "Opção de alterar nome, imagem e remover perfis configurados."
+      "Página exclusiva individual do filme no celular ao invés de pop-up.",
+      "Novo sistema de recomendações de filmes trocando a cada 30 minutos.",
+      "Botão de Minha Lista redesenhado como ícone e adição do botão de Curtir.",
+      "Aba 'Continuar Assistindo' reorganizada abaixo dos títulos principais."
     ]
   }
 ];
@@ -181,6 +178,7 @@ window.openChangelogModal = function () {
 
   if (!modal || !listContainer) return;
 
+  // Monta o conteúdo primeiro
   listContainer.innerHTML = CHANGELOG_DATA.map(item => `
     <div class="changelog-item">
       <div class="changelog-version">${item.version}</div>
@@ -191,14 +189,27 @@ window.openChangelogModal = function () {
     </div>
   `).join("");
 
-  modal.style.display = "flex";
+  // Atualiza o estado da versão vista
   localStorage.setItem("lastSeenChangelog", LATEST_VERSION);
   checkChangelogBadge();
+
+  // Exibe o modal garantindo o estilo correto de exibição
+  modal.style.display = "flex";
+  modal.style.zIndex = "9999";
 };
 
 window.closeChangelogModal = function () {
   const modal = document.getElementById("changelogModal");
   if (modal) modal.style.display = "none";
+
+  // Se nenhum perfil estiver ativo, garante que a tela de seleção continue visível
+  if (activeProfileIndex === null) {
+    const profileSelector = document.getElementById('profile-selector');
+    const mainApp = document.getElementById('main-app');
+    
+    if (profileSelector) profileSelector.style.display = 'flex';
+    if (mainApp) mainApp.style.display = 'none';
+  }
 };
 
 function playTudumSound() {
@@ -243,6 +254,30 @@ window.addEventListener('DOMContentLoaded', () => {
     isIntroFinished = true;
     checkAuthState();
   }, 2500);
+
+  const menuBtn = document.getElementById('menuBtn');
+  const navLinks = document.getElementById('navLinks');
+  if (menuBtn && navLinks) {
+    const menuIcon = menuBtn.querySelector('i');
+    menuBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      if (navLinks.classList.contains('active')) {
+        menuIcon.classList.remove('fa-bars');
+        menuIcon.classList.add('fa-xmark');
+      } else {
+        menuIcon.classList.remove('fa-xmark');
+        menuIcon.classList.add('fa-bars');
+      }
+    });
+
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+        menuIcon.classList.remove('fa-xmark');
+        menuIcon.classList.add('fa-bars');
+      });
+    });
+  }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -298,7 +333,8 @@ async function loadUserProfiles() {
       name: currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'Perfil 1',
       avatar: currentUser.photoURL || 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png',
       history: {},
-      myList: []
+      myList: [],
+      likes: []
     }];
     await setDoc(userRef, { profiles: userProfiles });
   }
@@ -311,6 +347,7 @@ function renderProfileSelector() {
   document.getElementById('main-app').style.display = 'none';
   
   checkChangelogBadge();
+  updateNotificationIcon();
 
   const grid = document.getElementById('profilesGrid');
   grid.innerHTML = '';
@@ -369,11 +406,11 @@ function selectProfile(idx) {
   document.getElementById('headerAvatar').src = profile.avatar;
   document.getElementById('headerName').innerText = profile.name;
 
-  updateNotificationIcon();
   showCatalogSection('home');
   renderMainCatalog();
   renderComingSoonCatalog();
   loadContinueWatching();
+  initRecommendationSystem();
 }
 
 window.openCreateProfileModal = () => document.getElementById('profileModal').style.display = 'flex';
@@ -414,7 +451,8 @@ window.saveNewProfile = async function() {
     name: nameInput,
     avatar: avatarUrl,
     history: {},
-    myList: []
+    myList: [],
+    likes: []
   };
 
   userProfiles.push(newProfile);
@@ -493,9 +531,21 @@ function getActiveMyList() {
   return userProfiles[activeProfileIndex].myList || [];
 }
 
+function getActiveLikes() {
+  if (activeProfileIndex === null || !userProfiles[activeProfileIndex]) return [];
+  return userProfiles[activeProfileIndex].likes || [];
+}
+
 async function syncMyListToCloud(myList) {
   if (!currentUser || activeProfileIndex === null) return;
   userProfiles[activeProfileIndex].myList = myList;
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { profiles: userProfiles });
+}
+
+async function syncLikesToCloud(likes) {
+  if (!currentUser || activeProfileIndex === null) return;
+  userProfiles[activeProfileIndex].likes = likes;
   const userRef = doc(db, "users", currentUser.uid);
   await updateDoc(userRef, { profiles: userProfiles });
 }
@@ -519,11 +569,57 @@ window.toggleMyList = async function() {
 function updateMyListButtonState() {
   if (!currentSelectedMovie) return;
   const myList = getActiveMyList();
-  const btnMyListText = document.getElementById('btnMyListText');
-  if (myList.includes(currentSelectedMovie.id)) {
-    btnMyListText.innerHTML = '&#10003; Na minha lista';
+  const inList = myList.includes(currentSelectedMovie.id);
+
+  const btnMobile = document.getElementById('btnMyListIcon');
+  const btnPc = document.getElementById('btnMyListIconPc');
+
+  const iconClass = inList ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-plus"></i>';
+
+  if (btnMobile) {
+    btnMobile.innerHTML = iconClass;
+    if (inList) btnMobile.classList.add('active'); else btnMobile.classList.remove('active');
+  }
+
+  if (btnPc) {
+    btnPc.innerHTML = iconClass;
+    if (inList) btnPc.classList.add('active'); else btnPc.classList.remove('active');
+  }
+}
+
+window.toggleLikeMovie = async function() {
+  if (!currentSelectedMovie) return;
+  let likes = getActiveLikes();
+  const index = likes.indexOf(currentSelectedMovie.id);
+
+  if (index > -1) {
+    likes.splice(index, 1);
   } else {
-    btnMyListText.innerHTML = '+ Minha Lista';
+    likes.push(currentSelectedMovie.id);
+  }
+
+  await syncLikesToCloud(likes);
+  updateLikeButtonState();
+};
+
+function updateLikeButtonState() {
+  if (!currentSelectedMovie) return;
+  const likes = getActiveLikes();
+  const isLiked = likes.includes(currentSelectedMovie.id);
+
+  const btnMobile = document.getElementById('btnLikeIcon');
+  const btnPc = document.getElementById('btnLikeIconPc');
+
+  const iconClass = isLiked ? '<i class="fa-solid fa-thumbs-up"></i>' : '<i class="fa-regular fa-thumbs-up"></i>';
+
+  if (btnMobile) {
+    btnMobile.innerHTML = iconClass;
+    if (isLiked) btnMobile.classList.add('active'); else btnMobile.classList.remove('active');
+  }
+
+  if (btnPc) {
+    btnPc.innerHTML = iconClass;
+    if (isLiked) btnPc.classList.add('active'); else btnPc.classList.remove('active');
   }
 }
 
@@ -532,6 +628,7 @@ window.showCatalogSection = function(section) {
   const myListSection = document.getElementById('myListSection');
   const comingSoonSection = document.getElementById('comingSoonSection');
   const suggestionsSection = document.getElementById('suggestionsSection');
+  const mobileMoviePage = document.getElementById('mobileMoviePage');
 
   const tabHome = document.getElementById('tabHome');
   const tabMyList = document.getElementById('tabMyList');
@@ -542,6 +639,7 @@ window.showCatalogSection = function(section) {
   myListSection.style.display = 'none';
   comingSoonSection.style.display = 'none';
   if (suggestionsSection) suggestionsSection.style.display = 'none';
+  if (mobileMoviePage) mobileMoviePage.style.display = 'none';
 
   tabHome.classList.remove('active');
   tabMyList.classList.remove('active');
@@ -652,6 +750,7 @@ window.sendSuggestion = async function(event) {
 };
 
 window.switchProfile = () => {
+  activeProfileIndex = null;
   isManageProfilesMode = false;
   renderProfileSelector();
 };
@@ -833,6 +932,40 @@ const comingSoonData = [
   }
 ];
 
+function initRecommendationSystem() {
+  updateRecommendationBanner();
+  if (recommendationInterval) clearInterval(recommendationInterval);
+  recommendationInterval = setInterval(updateRecommendationBanner, 30 * 60 * 1000);
+}
+
+function updateRecommendationBanner() {
+  const isMobile = window.innerWidth <= 768;
+  const randomIndex = Math.floor(Math.random() * moviesData.length);
+  recommendedMovie = moviesData[randomIndex];
+
+  const banner = document.getElementById('recommendationBanner');
+  const title = document.getElementById('recTitle');
+  const synopsis = document.getElementById('recSynopsis');
+
+  if (!banner || !recommendedMovie) return;
+
+  const bgImage = isMobile ? recommendedMovie.poster : recommendedMovie.banner;
+  banner.style.backgroundImage = `url('${bgImage}')`;
+  title.innerText = recommendedMovie.title;
+  synopsis.innerText = recommendedMovie.synopsis;
+}
+
+window.watchRecommendedMovie = function() {
+  if (!recommendedMovie) return;
+  currentSelectedMovie = recommendedMovie;
+  handleWatchClick();
+};
+
+window.openMovieFromRecommendation = function() {
+  if (!recommendedMovie) return;
+  openModal(recommendedMovie.id);
+};
+
 function renderMainCatalog() {
   const mainCatalog = document.getElementById('mainCatalog');
   mainCatalog.innerHTML = '';
@@ -858,7 +991,7 @@ function renderMyListCatalog() {
   const listMovies = allMovies.filter(m => myList.includes(m.id));
 
   if (listMovies.length === 0) {
-    myListCatalog.innerHTML = `<div style="color: #aaa; font-size: 14px; grid-column: 1 / -1;">Sua lista está vazia. Adicione filmes clicando no botão "+ Minha Lista".</div>`;
+    myListCatalog.innerHTML = `<div style="color: #aaa; font-size: 14px; padding: 10px 0;">Sua lista está vazia. Adicione filmes clicando no ícone de lista.</div>`;
     return;
   }
 
@@ -868,7 +1001,7 @@ function renderMyListCatalog() {
     card.onclick = () => openModal(movie.id);
     card.innerHTML = `
       <img src="${movie.poster}" alt="${movie.title}">
-      <div class="movie-card-title">${movie.title} ${movie.isComingSoon ? '<span style="color: #E50914; font-size: 11px;">(Em Breve)</span>' : ''}</div>
+      <div class="movie-card-title">${movie.title} ${movie.isComingSoon ? '<span style="color: var(--primary-color); font-size: 11px;">(Em Breve)</span>' : ''}</div>
     `;
     myListCatalog.appendChild(card);
   });
@@ -880,7 +1013,7 @@ function renderComingSoonCatalog() {
   comingSoonCatalog.innerHTML = '';
 
   if (comingSoonData.length === 0) {
-    comingSoonCatalog.innerHTML = `<div style="color: #aaa; font-size: 14px; grid-column: 1 / -1;">Não há lançamentos pendentes no momento. Todos os títulos já estão disponíveis no catálogo!</div>`;
+    comingSoonCatalog.innerHTML = `<div style="color: #aaa; font-size: 14px; padding: 10px 0;">Não há lançamentos pendentes no momento. Todos os títulos já estão disponíveis no catálogo!</div>`;
     return;
   }
 
@@ -900,6 +1033,16 @@ window.openModal = function(movieId) {
   currentSelectedMovie = moviesData.find(m => m.id === movieId) || comingSoonData.find(m => m.id === movieId);
   if (!currentSelectedMovie) return;
 
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    openMobileMoviePage();
+  } else {
+    openPcMovieModal();
+  }
+};
+
+function openPcMovieModal() {
   document.getElementById('modalBanner').style.backgroundImage = `url('${currentSelectedMovie.banner}')`;
   document.getElementById('modalTitle').innerText = currentSelectedMovie.title;
   document.getElementById('modalSynopsis').innerText = currentSelectedMovie.synopsis;
@@ -912,11 +1055,45 @@ window.openModal = function(movieId) {
     <span class="badge">${currentSelectedMovie.badge}</span>
   `;
 
-  const btnWatchText = document.getElementById('btnWatchText');
+  setupMovieButtons('btnWatchText', 'btnRestart', 'downloadMenu', 'btnDownload');
+  closeSearchDropdown();
+  updateMyListButtonState();
+  updateLikeButtonState();
+  document.getElementById('movieModal').style.display = 'flex';
+}
+
+function openMobileMoviePage() {
+  document.getElementById('homeSection').style.display = 'none';
+  document.getElementById('myListSection').style.display = 'none';
+  document.getElementById('comingSoonSection').style.display = 'none';
+  const suggestionsSection = document.getElementById('suggestionsSection');
+  if (suggestionsSection) suggestionsSection.style.display = 'none';
+
+  document.getElementById('mobilePoster').src = currentSelectedMovie.poster;
+  document.getElementById('mobileTitle').innerText = currentSelectedMovie.title;
+  document.getElementById('mobileSynopsis').innerText = currentSelectedMovie.synopsis;
+
+  document.getElementById('mobileMeta').innerHTML = `
+    <span class="match">${currentSelectedMovie.match}</span>
+    <span>${currentSelectedMovie.year}</span>
+    <span class="badge">${currentSelectedMovie.age}</span>
+    <span>${currentSelectedMovie.duration}</span>
+  `;
+
+  setupMovieButtons('mobileBtnWatchText', 'mobileBtnRestart', 'mobileDownloadMenu', 'mobileBtnDownload');
+  closeSearchDropdown();
+  updateMyListButtonState();
+  updateLikeButtonState();
+  document.getElementById('mobileMoviePage').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function setupMovieButtons(watchTextId, restartId, downloadMenuId, downloadContainerId) {
+  const btnWatchText = document.getElementById(watchTextId);
   const btnWatch = btnWatchText ? btnWatchText.closest('button') : null;
-  const btnDownload = document.getElementById('btnDownload') || document.querySelector('.download-container');
-  const btnRestart = document.getElementById('btnRestart');
-  const downloadMenu = document.getElementById('downloadMenu');
+  const btnDownload = document.getElementById(downloadContainerId);
+  const btnRestart = document.getElementById(restartId);
+  const downloadMenu = document.getElementById(downloadMenuId);
 
   if (currentSelectedMovie.isComingSoon) {
     if (btnWatch) btnWatch.style.display = 'none';
@@ -956,10 +1133,11 @@ window.openModal = function(movieId) {
       if (btnRestart) btnRestart.style.display = 'none';
     }
   }
+}
 
-  closeSearchDropdown();
-  updateMyListButtonState();
-  document.getElementById('movieModal').style.display = 'flex';
+window.closeMobileMoviePage = function() {
+  document.getElementById('mobileMoviePage').style.display = 'none';
+  showCatalogSection('home');
 };
 
 window.closeModal = function() {
@@ -967,7 +1145,9 @@ window.closeModal = function() {
 };
 
 window.toggleDownloadMenu = function() {
-  const menu = document.getElementById('downloadMenu');
+  const isMobile = window.innerWidth <= 768;
+  const menu = isMobile ? document.getElementById('mobileDownloadMenu') : document.getElementById('downloadMenu');
+
   if (currentSelectedMovie && currentSelectedMovie.isComingSoon) {
     if (menu) menu.style.display = 'none';
     return;
@@ -1105,6 +1285,9 @@ window.restartMovie = function() {
 async function startStreaming(movie, savedTime = 0, savedQualityUrl = null) {
   currentSelectedMovie = movie;
   closeModal();
+  if (window.innerWidth <= 768) {
+    document.getElementById('mobileMoviePage').style.display = 'none';
+  }
   closeSearchDropdown();
 
   document.getElementById('playerMovieTitle').innerText = movie.title;

@@ -61,6 +61,78 @@ const CHANGELOG_DATA = [
       "Ícones de notificações e logs movidos para a tela de seleção de perfil.",
       "Layout do catálogo ajustado para carrossel/deslize lateral em todas as seções."
     ]
+  },
+  {
+     version: "v1.9.0",
+    date: "18 de Setembro, 2026",
+    changes: [
+      "Página exclusiva individual do filme no celular ao invés de pop-up.",
+      "Novo sistema de recomendações de filmes trocando a cada 30 minutos.",
+      "Botão de Minha Lista redesenhado como ícone e adição do botão de Curtir.",
+      "Aba 'Continuar Assistindo' reorganizada abaixo dos títulos principais."
+    ]
+  },
+  {
+    version: "v1.8.0",
+    date: "18 de Setembro, 2026",
+    changes: [
+      "Adicionada a aba 'Sugestões' para o envio direto de ideias de filmes para a plataforma com foto opcional.",
+      "Adicionadas opções detalhadas de áudio (Dublado/Legendado) e verificação de legendas em PT-BR nas sugestões."
+    ]
+  },
+  {
+     version: "v1.7.0",
+    date: "18 de Setembro, 2026",
+    changes: [
+       "Adicionado o filme 'Suzume' (Makoto Shinkai) à aba Em Breve!"
+    ]
+  },
+  {
+    version: "v1.6.0",
+    date: "18 de Setembro, 2026",
+     changes: [
+      "Adicionado o recurso de Gerenciamento e Edição de Perfis!",
+      "Opção de alterar nome, imagem e remover perfis configurados."
+    ]
+  },
+  {
+    version: "v1.4.0",
+    date: "17 de Setembro, 2026",
+    changes: [
+      "Adicionados os filmes 'Demon Slayer: Trem Infinito' e 'Demon Slayer: Castelo Infinito Part.1' na aba Em Breve."
+    ]
+  },
+  {
+    version: "v1.3.0",
+    date: "17 de Setembro, 2026",
+    changes: [
+      "Adicionados os três filmes da trilogia 'Rascal Does Not Dream' ao catálogo principal com opções em 1080p e 720p."
+    ]
+  },
+  {
+    version: "v1.2.1",
+    date: "16 de Setembro, 2026",
+    changes: [
+      "Correção de layout: Remoção do ícone de notificação duplicado na exibição mobile."
+    ]
+  },
+  {
+    version: "v1.2.0",
+    date: "16 de Setembro, 2026",
+    changes: [
+      "Adicionado suporte nativo a Notificações Push do sistema.",
+      "Adicionado painel de histórico de notas de atualização.",
+      "Melhorias no player de vídeo e suporte a resoluções.",
+      "Ajustes de toque no player e novos títulos 'Em Breve'."
+    ]
+  },
+  {
+    version: "v1.1.0",
+    date: "01 de Setembro, 2026",
+    changes: [
+      "Implementado suporte a salvamento de progresso ('Continuar Assistindo').",
+      "Adicionada a funcionalidade 'Minha Lista'."
+    ]
   }
 ];
 

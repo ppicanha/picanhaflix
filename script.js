@@ -40,21 +40,26 @@ const svgSoundMute = `<svg class="icon-svg" viewBox="0 0 24 24"><path fill="curr
 // Changelog
 const CHANGELOG_DATA = [
   {
+    version: "v2.2.0",
+    date: "19 de Setembro, 2026",
+    changes: [
+      "Aba dedicada de Coleção adicionada ao invés de janela pop-up."
+    ]
+  },
+  {
+    version: "v2.1.0",
+    date: "19 de Setembro, 2026",
+    changes: [
+      "Adicionada a seção de Coleções no catálogo inicial (Makoto Shinkai, Demon Slayer e Rascal Does Not Dream).",
+      "Ícone de logs movido de forma fixa e centralizada para o final da página Inicial."
+    ]
+  },
+  {
     version: "v2.0.0",
     date: "18 de Setembro, 2026",
     changes: [
       "Ícones de notificações e logs movidos para a tela de seleção de perfil.",
       "Layout do catálogo ajustado para carrossel/deslize lateral em todas as seções."
-    ]
-  },
-  {
-    version: "v1.9.0",
-    date: "18 de Setembro, 2026",
-    changes: [
-      "Página exclusiva individual do filme no celular ao invés de pop-up.",
-      "Novo sistema de recomendações de filmes trocando a cada 30 minutos.",
-      "Botão de Minha Lista redesenhado como ícone e adição do botão de Curtir.",
-      "Aba 'Continuar Assistindo' reorganizada abaixo dos títulos principais."
     ]
   }
 ];
@@ -178,7 +183,6 @@ window.openChangelogModal = function () {
 
   if (!modal || !listContainer) return;
 
-  // Monta o conteúdo primeiro
   listContainer.innerHTML = CHANGELOG_DATA.map(item => `
     <div class="changelog-item">
       <div class="changelog-version">${item.version}</div>
@@ -189,11 +193,9 @@ window.openChangelogModal = function () {
     </div>
   `).join("");
 
-  // Atualiza o estado da versão vista
   localStorage.setItem("lastSeenChangelog", LATEST_VERSION);
   checkChangelogBadge();
 
-  // Exibe o modal garantindo o estilo correto de exibição
   modal.style.display = "flex";
   modal.style.zIndex = "9999";
 };
@@ -202,7 +204,6 @@ window.closeChangelogModal = function () {
   const modal = document.getElementById("changelogModal");
   if (modal) modal.style.display = "none";
 
-  // Se nenhum perfil estiver ativo, garante que a tela de seleção continue visível
   if (activeProfileIndex === null) {
     const profileSelector = document.getElementById('profile-selector');
     const mainApp = document.getElementById('main-app');
@@ -408,6 +409,7 @@ function selectProfile(idx) {
 
   showCatalogSection('home');
   renderMainCatalog();
+  renderCollectionsCatalog();
   renderComingSoonCatalog();
   loadContinueWatching();
   initRecommendationSystem();
@@ -625,6 +627,7 @@ function updateLikeButtonState() {
 
 window.showCatalogSection = function(section) {
   const homeSection = document.getElementById('homeSection');
+  const singleCollectionSection = document.getElementById('singleCollectionSection');
   const myListSection = document.getElementById('myListSection');
   const comingSoonSection = document.getElementById('comingSoonSection');
   const suggestionsSection = document.getElementById('suggestionsSection');
@@ -636,6 +639,7 @@ window.showCatalogSection = function(section) {
   const tabSuggestions = document.getElementById('tabSuggestions');
 
   homeSection.style.display = 'none';
+  if (singleCollectionSection) singleCollectionSection.style.display = 'none';
   myListSection.style.display = 'none';
   comingSoonSection.style.display = 'none';
   if (suggestionsSection) suggestionsSection.style.display = 'none';
@@ -932,6 +936,41 @@ const comingSoonData = [
   }
 ];
 
+// Dados das Coleções
+const collectionsData = [
+  {
+    id: 'col_makoto_shinkai',
+    title: 'Coleção Makoto Shinkai',
+    poster: 'https://chonthuonghieu.com/wp-content/uploads/2022/01/your-name-7.jpg',
+    movieIds: [
+      'your_name',
+      'tenki_no_ko',
+      'kotonoha_no_niwa',
+      'byousoku_5_centimeter',
+      'kumo_no_mukou'
+    ]
+  },
+  {
+    id: 'col_demon_slayer',
+    title: 'Coleção Demon Slayer',
+    poster: 'https://teoriageek.com.br/wp-content/uploads/2025/09/Poster-1.jpg',
+    movieIds: [
+      'demon_slayer_infinity_castle_1',
+      'demon_slayer_mugen_train'
+    ]
+  },
+  {
+    id: 'col_rascal',
+    title: 'Trilogia Rascal Does Not Dream',
+    poster: 'https://cdn.sinemalar.com/images/movie/281745/poster/rascal-does-not-dream-of-a-dreaming-girl-1681869118.jpg',
+    movieIds: [
+      'rascal_dreaming_girl',
+      'rascal_sister_venturing_out',
+      'rascal_knapsack_kid'
+    ]
+  }
+];
+
 function initRecommendationSystem() {
   updateRecommendationBanner();
   if (recommendationInterval) clearInterval(recommendationInterval);
@@ -981,6 +1020,57 @@ function renderMainCatalog() {
     mainCatalog.appendChild(card);
   });
 }
+
+function renderCollectionsCatalog() {
+  const catalog = document.getElementById('collectionsCatalog');
+  if (!catalog) return;
+  catalog.innerHTML = '';
+
+  collectionsData.forEach(col => {
+    const card = document.createElement('div');
+    card.className = 'movie-card collection-card';
+    card.onclick = () => openCollectionSection(col.id);
+    card.innerHTML = `
+      <img src="${col.poster}" alt="${col.title}">
+      <div class="movie-card-title">${col.title}</div>
+    `;
+    catalog.appendChild(card);
+  });
+}
+
+window.openCollectionSection = function(collectionId) {
+  const collection = collectionsData.find(c => c.id === collectionId);
+  if (!collection) return;
+
+  const homeSection = document.getElementById('homeSection');
+  const singleCollectionSection = document.getElementById('singleCollectionSection');
+  const titleEl = document.getElementById('singleCollectionTitle');
+  const gridEl = document.getElementById('singleCollectionCatalog');
+
+  if (!singleCollectionSection || !titleEl || !gridEl) return;
+
+  homeSection.style.display = 'none';
+  singleCollectionSection.style.display = 'block';
+
+  titleEl.innerText = collection.title;
+  gridEl.innerHTML = '';
+
+  collection.movieIds.forEach(id => {
+    const movie = moviesData.find(m => m.id === id);
+    if (!movie) return;
+
+    const card = document.createElement('div');
+    card.className = 'movie-card';
+    card.onclick = () => openModal(movie.id);
+    card.innerHTML = `
+      <img src="${movie.poster}" alt="${movie.title}">
+      <div class="movie-card-title">${movie.title}</div>
+    `;
+    gridEl.appendChild(card);
+  });
+
+  window.scrollTo(0, 0);
+};
 
 function renderMyListCatalog() {
   const myListCatalog = document.getElementById('myListCatalog');
@@ -1064,6 +1154,8 @@ function openPcMovieModal() {
 
 function openMobileMoviePage() {
   document.getElementById('homeSection').style.display = 'none';
+  const singleCollectionSection = document.getElementById('singleCollectionSection');
+  if (singleCollectionSection) singleCollectionSection.style.display = 'none';
   document.getElementById('myListSection').style.display = 'none';
   document.getElementById('comingSoonSection').style.display = 'none';
   const suggestionsSection = document.getElementById('suggestionsSection');
@@ -1396,13 +1488,7 @@ window.toggleFullscreen = function() {
     } else if (playerView.webkitRequestFullscreen) {
       playerView.webkitRequestFullscreen();
     }
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock("landscape").catch(() => {});
-    }
   } else {
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
-    }
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.webkitExitFullscreen) {
@@ -1411,133 +1497,107 @@ window.toggleFullscreen = function() {
   }
 };
 
-function formatTime(sec) {
-  if (isNaN(sec)) return '00:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-}
-
-player.addEventListener('ended', () => {
-  removeMovieFromHistory(currentSelectedMovie.id);
-  closePlayer();
-});
+window.changeQuality = function() {
+  const currentTime = player.currentTime;
+  const isPaused = player.paused;
+  source.src = select.value;
+  player.load();
+  player.currentTime = currentTime;
+  if (!isPaused) player.play();
+};
 
 player.addEventListener('timeupdate', () => {
-  if (player.duration) {
-    const percentage = (player.currentTime / player.duration) * 100;
-    playerSeek.value = percentage;
-    timeDisplay.innerText = `${formatTime(player.currentTime)} / ${formatTime(player.duration)}`;
-  }
-  if (player.currentTime > 0) {
+  if (!player.duration) return;
+  const progress = (player.currentTime / player.duration) * 100;
+  playerSeek.value = progress;
+  timeDisplay.innerText = `${formatTime(player.currentTime)} / ${formatTime(player.duration)}`;
+  
+  if (Math.floor(player.currentTime) % 5 === 0) {
     saveProgress();
   }
 });
 
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
 function saveProgress() {
-  if (!player.duration || !currentSelectedMovie) return;
-
-  if (player.duration - player.currentTime <= 10) {
-    removeMovieFromHistory(currentSelectedMovie.id);
-    return;
+  if (!currentSelectedMovie || !player.duration) return;
+  currentHistory = window.getActiveHistory();
+  
+  if (player.currentTime / player.duration > 0.95) {
+    delete currentHistory[currentSelectedMovie.id];
+  } else {
+    currentHistory[currentSelectedMovie.id] = {
+      time: player.currentTime,
+      duration: player.duration,
+      quality: select.value,
+      lastUpdated: Date.now()
+    };
   }
-
-  currentHistory[currentSelectedMovie.id] = {
-    id: currentSelectedMovie.id,
-    title: currentSelectedMovie.title,
-    poster: currentSelectedMovie.poster,
-    time: player.currentTime,
-    duration: player.duration,
-    quality: select.value
-  };
-
   window.syncHistoryToCloud();
 }
 
-function removeMovieFromHistory(movieId) {
-  if (currentHistory[movieId]) {
-    delete currentHistory[movieId];
-    window.syncHistoryToCloud();
-  }
-}
-
 function loadContinueWatching() {
-  currentHistory = window.getActiveHistory();
-  const continueSection = document.getElementById('continueSection');
-  const continueCatalog = document.getElementById('continueCatalog');
+  const container = document.getElementById('continueCatalog');
+  const section = document.getElementById('continueSection');
+  container.innerHTML = '';
 
-  continueCatalog.innerHTML = '';
+  currentHistory = window.getActiveHistory();
   const keys = Object.keys(currentHistory);
 
   if (keys.length === 0) {
-    continueSection.style.display = 'none';
+    section.style.display = 'none';
     return;
   }
 
-  keys.forEach(key => {
-    const data = currentHistory[key];
-    const movieObj = moviesData.find(m => m.id === data.id);
-    if (!movieObj) return;
+  section.style.display = 'block';
+  keys.forEach(movieId => {
+    const movie = moviesData.find(m => m.id === movieId);
+    if (!movie) return;
 
-    const percentage = (data.time / data.duration) * 100;
-    const remainingSeconds = Math.max(0, data.duration - data.time);
-    const remainingMinutes = Math.ceil(remainingSeconds / 60);
+    const hist = currentHistory[movieId];
+    const progress = (hist.time / hist.duration) * 100;
+    const remainingMins = Math.ceil((hist.duration - hist.time) / 60);
 
     const card = document.createElement('div');
     card.className = 'movie-card';
-    card.onclick = () => startStreaming(movieObj, data.time, data.quality);
+    card.onclick = () => openModal(movie.id);
     card.innerHTML = `
-      <img src="${data.poster}" alt="${data.title}">
+      <img src="${movie.poster}" alt="${movie.title}">
       <div class="progress-bar-container">
-        <div class="progress-bar" style="width: ${percentage}%"></div>
+        <div class="progress-bar" style="width: ${progress}%"></div>
       </div>
-      <div class="movie-card-title">${data.title}</div>
-      <div class="remaining-time">Faltam ${remainingMinutes} min</div>
+      <div class="movie-card-title">${movie.title}</div>
+      <div class="remaining-time">Faltam ${remainingMins} min</div>
     `;
-    continueCatalog.appendChild(card);
+    container.appendChild(card);
   });
-
-  continueSection.style.display = 'block';
 }
 
-window.changeQuality = function() {
-  const currentTime = player.currentTime;
-  const isPaused = player.paused;
-
-  source.src = select.value;
-  player.load();
-  player.currentTime = currentTime;
-
-  if (!isPaused) player.play();
-  saveProgress();
-};
-
 window.searchMovies = function() {
-  const input = document.getElementById('searchInput').value.trim().toLowerCase();
+  const input = document.getElementById('searchInput').value.toLowerCase().trim();
   const dropdown = document.getElementById('searchResultsDropdown');
 
   if (input === '') {
-    closeSearchDropdown();
+    dropdown.style.display = 'none';
     return;
   }
 
   const allMovies = [...moviesData, ...comingSoonData];
-  const results = allMovies.filter(movie => movie.title.toLowerCase().includes(input));
-  dropdown.innerHTML = '';
+  const results = allMovies.filter(m => m.title.toLowerCase().includes(input));
 
-  if (results.length > 0) {
-    results.forEach(movie => {
-      const item = document.createElement('div');
-      item.className = 'search-result-item';
-      item.onclick = () => openModal(movie.id);
-      item.innerHTML = `
-        <img src="${movie.poster}" alt="${movie.title}">
-        <span class="search-result-title">${movie.title}</span>
-      `;
-      dropdown.appendChild(item);
-    });
+  if (results.length === 0) {
+    dropdown.innerHTML = '<div style="padding: 10px; color: #aaa; font-size: 12px;">Nenhum filme encontrado</div>';
   } else {
-    dropdown.innerHTML = `<div style="text-align:center; padding:15px; color:#aaa; font-size:13px;">Nenhum filme encontrado</div>`;
+    dropdown.innerHTML = results.map(m => `
+      <div class="search-result-item" onclick="openModal('${m.id}')">
+        <img src="${m.poster}" alt="${m.title}">
+        <span>${m.title}</span>
+      </div>
+    `).join('');
   }
 
   dropdown.style.display = 'block';
@@ -1546,12 +1606,6 @@ window.searchMovies = function() {
 function closeSearchDropdown() {
   const dropdown = document.getElementById('searchResultsDropdown');
   if (dropdown) dropdown.style.display = 'none';
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.value = '';
 }
-
-window.onclick = function(event) {
-  const modal = document.getElementById('movieModal');
-  if (event.target === modal) closeModal();
-  if (!event.target.closest('.search-container')) {
-    closeSearchDropdown();
-  }
-};

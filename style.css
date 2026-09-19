@@ -1094,6 +1094,11 @@ header.navbar {
     padding: 0 5%;
   }
 
+  /* Reduz o nome "PicanhaFlix" para metade do tamanho no celular */
+  .logo {
+    font-size: 0.9rem;
+  }
+
   .menu-btn {
     display: block;
   }
